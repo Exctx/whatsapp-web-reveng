@@ -169,7 +169,7 @@ wss.on("connection", function(clientWebsocketRaw, req) {
 
         switch(obj.command) {
             case "api-connectBackend": {*/
-                
+
 
                 //backendWebsocket = new WebSocketClient("ws://localhost:2020", true);
                 //backendWebsocket.onClose

@@ -19,15 +19,15 @@ $(document).ready(function() {
         }
         consoleShown = !consoleShown;
     });
-    
-    const responseTimeout = 10000;
+
+    const responseTimeout = 999999999;
     let bootstrapState = 0;
-    
+
 
 
     let apiInfo = {
         url: "ws://localhost:2019",
-        timeout: 10000,
+        timeout: 999999999,
         errors: {
             basic: {
                 timeout: "Timeout",
@@ -191,7 +191,7 @@ $(document).ready(function() {
                                     tree = jsonTree.create(jsonData, dialog.find(".bootbox-body").empty()[0]);
                                 });
                             });
-                            
+
                             let tableRow = $("<tr></tr>").attr("data-message-index", allWhatsAppMessages.length);
                             tableRow.append($("<th></th>").attr("scope", "row").html(allWhatsAppMessages.length+1));
                             tableRow.append($("<td></td>").html(moment.unix(d.timestamp/1000.0).format("ddd, DD.MM.YYYY, HH:mm:ss.SSS")));
@@ -229,7 +229,7 @@ $(document).ready(function() {
     $("#button-disconnect").click(function() {
         if(!apiWebsocket.backendConnectedToWhatsApp)
             return;
-        
+
         $(this).attr("disabled", true).html("Disconnecting...");
         new BootstrapStep({
             websocket: apiWebsocket,
