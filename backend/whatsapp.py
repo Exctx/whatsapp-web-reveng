@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import binascii
+
 import sys;
-
-from axolotl.kdf.hkdfv3 import HKDFv3
-from axolotl.util.byteutil import ByteUtil
-
 sys.dont_write_bytecode = True;
 
 import os;
@@ -82,42 +78,42 @@ def AESDecrypt(key, ciphertext):						# from https://stackoverflow.com/a/2086826
 
 
 class WhatsAppWebClient:
-	websocketIsOpened = False;
-	onOpenCallback = None;
-	onMessageCallback = None;
-	onCloseCallback = None;
-	activeWs = None;
-	location = r'''/usr/src/app/media/'''; ## Change Location of media as per requirement
-	messageSentCount = 0;
-	websocketThread = None;
-	messageQueue = {};																# maps message tags (provided by WhatsApp) to more information (description and callback)
-	loginInfo = {
-		"clientId": None,
-		"serverRef": None,
-		"privateKey": None,
-		"publicKey": None,
-		"key": {
-			"encKey": None,
-			"macKey": None
-		}
-	};
-	connInfo = {
-		"clientToken": None,
-		"serverToken": None,
-		"browserToken": None,
-		"secret": None,
-		"sharedSecret": None,
-		"me": None
-	};
+    websocketIsOpened = False;
+    onOpenCallback = None;
+    onMessageCallback = None;
+    onCloseCallback = None;
+    location = r'''/usr/src/app/media/'''; ## Change Location of media as per requirement
+    activeWs = None;
+    messageSentCount = 0;
+    websocketThread = None;
+    messageQueue = {};																# maps message tags (provided by WhatsApp) to more information (description and callback)
+    loginInfo = {
+        "clientId": None,
+        "serverRef": None,
+        "privateKey": None,
+        "publicKey": None,
+        "key": {
+            "encKey": None,
+            "macKey": None
+        }
+    };
+    connInfo = {
+        "clientToken": None,
+        "serverToken": None,
+        "browserToken": None,
+        "secret": None,
+        "sharedSecret": None,
+        "me": None
+    };
 
-	def __init__(self, onOpenCallback, onMessageCallback, onCloseCallback):
-		self.onOpenCallback = onOpenCallback;
-		self.onMessageCallback = onMessageCallback;
-		self.onCloseCallback = onCloseCallback;
-		websocket.enableTrace(True);
-		self.connect();
+    def __init__(self, onOpenCallback, onMessageCallback, onCloseCallback):
+        self.onOpenCallback = onOpenCallback;
+        self.onMessageCallback = onMessageCallback;
+        self.onCloseCallback = onCloseCallback;
+        websocket.enableTrace(True);
+        self.connect();
 
-	def decodeMedia(self, mediaMessage):
+    def decodeMedia(self, mediaMessage):
 		info = media = ''
 		if 'imageMessage' in mediaMessage:
 		    media = mediaMessage.get('imageMessage')
@@ -147,194 +143,167 @@ class WhatsAppWebClient:
 		    f.write(data)
 		return location
 
-	def onOpen(self, ws):
-		try:
-			self.websocketIsOpened = True;
-			if self.onOpenCallback is not None and "func" in self.onOpenCallback:
-				self.onOpenCallback["func"](self.onOpenCallback);
-			eprint("WhatsApp backend Websocket opened.");
-		except:
-			eprint(traceback.format_exc());
+    def onOpen(self, ws):
+        try:
+            self.websocketIsOpened = True;
+            if self.onOpenCallback is not None and "func" in self.onOpenCallback:
+                self.onOpenCallback["func"](self.onOpenCallback);
+            eprint("WhatsApp backend Websocket opened.");
+        except:
+            eprint(traceback.format_exc());
 
-	def onError(self, ws, error):
-		eprint(error);
+    def onError(self, ws, error):
+        eprint(error);
 
-	def onClose(self, ws):
-		self.websocketIsOpened = False;
-		if self.onCloseCallback is not None and "func" in self.onCloseCallback:
-			self.onCloseCallback["func"](self.onCloseCallback);
-		eprint("WhatsApp backend Websocket closed.");
+    def onClose(self, ws):
+        self.websocketIsOpened = False;
+        if self.onCloseCallback is not None and "func" in self.onCloseCallback:
+            self.onCloseCallback["func"](self.onCloseCallback);
+        eprint("WhatsApp backend Websocket closed.");
 
-	def onMessage(self, ws, message):
-		try:
-			messageSplit = message.split(",", 1);
-			messageTag = messageSplit[0];
-			messageContent = messageSplit[1];
+    def onMessage(self, ws, message):
+        try:
+            messageSplit = message.split(",", 1);
+            messageTag = messageSplit[0];
+            messageContent = messageSplit[1];
 
-			if messageTag in self.messageQueue:											# when the server responds to a client's message
-				pend = self.messageQueue[messageTag];
-				if pend["desc"] == "_status":
-					if messageContent[0] == 'Pong' and messageContent[1] == True:
-						pend["callback"]({"Connected": True,"user":self.connInfo["me"],"pushname":self.connInfo["pushname"]})
-				elif pend["desc"] == "_restoresession":
-					eprint("")  # TODO implement Challenge Solving
- 				elif pend["desc"] == "_login":
-					eprint("Message after login: ", message);
-					self.loginInfo["serverRef"] = json.loads(messageContent)["ref"];
-					eprint("set server id: " + self.loginInfo["serverRef"]);
-					self.loginInfo["privateKey"] = curve25519.Private();
-					self.loginInfo["publicKey"] = self.loginInfo["privateKey"].get_public();
-					qrCodeContents = self.loginInfo["serverRef"] + "," + base64.b64encode(self.loginInfo["publicKey"].serialize()) + "," + self.loginInfo["clientId"];
-					eprint("qr code contents: " + qrCodeContents);
+            if messageTag in self.messageQueue:											# when the server responds to a client's message
+                pend = self.messageQueue[messageTag];
+                if pend["desc"] == "_status":
+                    if messageContent[0] == 'Pong' and messageContent[1] == True:
+                        pend["callback"]({"Connected": True,"user":self.connInfo["me"],"pushname":self.connInfo["pushname"]})
+                elif pend["desc"] == "_restoresession":
+                    eprint("")  # TODO implement Challenge Solving
+                elif pend["desc"] == "_login":
+                    eprint("Message after login: ", message);
+                    self.loginInfo["serverRef"] = json.loads(messageContent)["ref"];
+                    eprint("set server id: " + self.loginInfo["serverRef"]);
+                    self.loginInfo["privateKey"] = curve25519.Private();
+                    self.loginInfo["publicKey"] = self.loginInfo["privateKey"].get_public();
+                    qrCodeContents = self.loginInfo["serverRef"] + "," + base64.b64encode(self.loginInfo["publicKey"].serialize()) + "," + self.loginInfo["clientId"];
+                    eprint("qr code contents: " + qrCodeContents);
 
-					svgBuffer = io.BytesIO();											# from https://github.com/mnooner256/pyqrcode/issues/39#issuecomment-207621532
-					pyqrcode.create(qrCodeContents, error='L').svg(svgBuffer, scale=6, background="rgba(0,0,0,0.0)", module_color="#122E31", quiet_zone=0);
-					if "callback" in pend and pend["callback"] is not None and "func" in pend["callback"] and pend["callback"]["func"] is not None and "tag" in pend["callback"] and pend["callback"]["tag"] is not None:
-						pend["callback"]["func"]({ "type": "generated_qr_code", "image": "data:image/svg+xml;base64," + base64.b64encode(svgBuffer.getvalue()), "content": qrCodeContents }, pend["callback"]);
-			else:
-				try:
-					jsonObj = json.loads(messageContent);								# try reading as json
-				except ValueError, e:
-					if messageContent != "":
-						hmacValidation = HmacSha256(self.loginInfo["key"]["macKey"], messageContent[32:]);
-						if hmacValidation != messageContent[:32]:
-							raise ValueError("Hmac mismatch");
+                    svgBuffer = io.BytesIO();											# from https://github.com/mnooner256/pyqrcode/issues/39#issuecomment-207621532
+                    pyqrcode.create(qrCodeContents, error='L').svg(svgBuffer, scale=6, background="rgba(0,0,0,0.0)", module_color="#122E31", quiet_zone=0);
+                    if "callback" in pend and pend["callback"] is not None and "func" in pend["callback"] and pend["callback"]["func"] is not None and "tag" in pend["callback"] and pend["callback"]["tag"] is not None:
+                        pend["callback"]["func"]({ "type": "generated_qr_code", "image": "data:image/svg+xml;base64," + base64.b64encode(svgBuffer.getvalue()), "content": qrCodeContents }, pend["callback"]);
+            else:
+                try:
+                    jsonObj = json.loads(messageContent);								# try reading as json
+                except ValueError, e:
+                    if messageContent != "":
+                        hmacValidation = HmacSha256(self.loginInfo["key"]["macKey"], messageContent[32:]);
+                        if hmacValidation != messageContent[:32]:
+                            raise ValueError("Hmac mismatch");
 
-						decryptedMessage = AESDecrypt(self.loginInfo["key"]["encKey"], messageContent[32:]);
-						try:
-							processedData = whatsappReadBinary(decryptedMessage, True);
-							messageType = "binary";
-							##self.decodeMedia(mediaMessage=processedData[2][0]['message']) media decoder can be called here if message is media
-						except:
-							processedData = { "traceback": traceback.format_exc().splitlines() };
-							messageType = "error";
-						finally:
-							self.onMessageCallback["func"](processedData, self.onMessageCallback, { "message_type": messageType });
-				else:
-					self.onMessageCallback["func"](jsonObj, self.onMessageCallback, { "message_type": "json" });
-					if isinstance(jsonObj, list) and len(jsonObj) > 0:					# check if the result is an array
-						eprint(json.dumps(jsonObj));
-						if jsonObj[0] == "Conn":
-							Timer(25, lambda: self.activeWs.send('?,,')).start() # Keepalive Request
-							self.connInfo["clientToken"] = jsonObj[1]["clientToken"];
-							self.connInfo["serverToken"] = jsonObj[1]["serverToken"];
-							self.connInfo["browserToken"] = jsonObj[1]["browserToken"];
-							self.connInfo["me"] = jsonObj[1]["wid"];
+                        decryptedMessage = AESDecrypt(self.loginInfo["key"]["encKey"], messageContent[32:]);
+                        try:
+                            processedData = whatsappReadBinary(decryptedMessage, True);
+                            messageType = "binary";
+                            ##self.decodeMedia(mediaMessage=processedData[2][0]['message']) media decoder can be called here if message is media
+                        except:
+                            processedData = { "traceback": traceback.format_exc().splitlines() };
+                            messageType = "error";
+                        finally:
+                            self.onMessageCallback["func"](processedData, self.onMessageCallback, { "message_type": messageType });
+                else:
+                    self.onMessageCallback["func"](jsonObj, self.onMessageCallback, { "message_type": "json" });
+                    if isinstance(jsonObj, list) and len(jsonObj) > 0:					# check if the result is an array
+                        eprint(json.dumps(jsonObj));
+                        if jsonObj[0] == "Conn":
+                            Timer(25, lambda: self.activeWs.send('?,,')).start() # Keepalive Request
+                            self.connInfo["clientToken"] = jsonObj[1]["clientToken"];
+                            self.connInfo["serverToken"] = jsonObj[1]["serverToken"];
+                            self.connInfo["browserToken"] = jsonObj[1]["browserToken"];
+                            self.connInfo["me"] = jsonObj[1]["wid"];
 
-							self.connInfo["secret"] = base64.b64decode(jsonObj[1]["secret"]);
-							self.connInfo["sharedSecret"] = self.loginInfo["privateKey"].get_shared_key(curve25519.Public(self.connInfo["secret"][:32]), lambda a: a);
-							sse = self.connInfo["sharedSecretExpanded"] = HKDF(self.connInfo["sharedSecret"], 80);
-							hmacValidation = HmacSha256(sse[32:64], self.connInfo["secret"][:32] + self.connInfo["secret"][64:]);
-							if hmacValidation != self.connInfo["secret"][32:64]:
-								raise ValueError("Hmac mismatch");
+                            self.connInfo["secret"] = base64.b64decode(jsonObj[1]["secret"]);
+                            self.connInfo["sharedSecret"] = self.loginInfo["privateKey"].get_shared_key(curve25519.Public(self.connInfo["secret"][:32]), lambda a: a);
+                            sse = self.connInfo["sharedSecretExpanded"] = HKDF(self.connInfo["sharedSecret"], 80);
+                            hmacValidation = HmacSha256(sse[32:64], self.connInfo["secret"][:32] + self.connInfo["secret"][64:]);
+                            if hmacValidation != self.connInfo["secret"][32:64]:
+                                raise ValueError("Hmac mismatch");
 
-							keysEncrypted = sse[64:] + self.connInfo["secret"][64:];
-							keysDecrypted = AESDecrypt(sse[:32], keysEncrypted);
-							self.loginInfo["key"]["encKey"] = keysDecrypted[:32];
-							self.loginInfo["key"]["macKey"] = keysDecrypted[32:64];
+                            keysEncrypted = sse[64:] + self.connInfo["secret"][64:];
+                            keysDecrypted = AESDecrypt(sse[:32], keysEncrypted);
+                            self.loginInfo["key"]["encKey"] = keysDecrypted[:32];
+                            self.loginInfo["key"]["macKey"] = keysDecrypted[32:64];
 
-							# eprint("private key            : ", base64.b64encode(self.loginInfo["privateKey"].serialize()));
-							# eprint("secret                 : ", base64.b64encode(self.connInfo["secret"]));
-							# eprint("shared secret          : ", base64.b64encode(self.connInfo["sharedSecret"]));
-							# eprint("shared secret expanded : ", base64.b64encode(self.connInfo["sharedSecretExpanded"]));
-							# eprint("hmac validation        : ", base64.b64encode(hmacValidation));
-							# eprint("keys encrypted         : ", base64.b64encode(keysEncrypted));
-							# eprint("keys decrypted         : ", base64.b64encode(keysDecrypted));
+                            # eprint("private key            : ", base64.b64encode(self.loginInfo["privateKey"].serialize()));
+                            # eprint("secret                 : ", base64.b64encode(self.connInfo["secret"]));
+                            # eprint("shared secret          : ", base64.b64encode(self.connInfo["sharedSecret"]));
+                            # eprint("shared secret expanded : ", base64.b64encode(self.connInfo["sharedSecretExpanded"]));
+                            # eprint("hmac validation        : ", base64.b64encode(hmacValidation));
+                            # eprint("keys encrypted         : ", base64.b64encode(keysEncrypted));
+                            # eprint("keys decrypted         : ", base64.b64encode(keysDecrypted));
 
-							eprint("set connection info: client, server and browser token; secret, shared secret, enc key, mac key");
-							eprint("logged in as " + jsonObj[1]["pushname"]  + " (" + jsonObj[1]["wid"] + ")");
-						elif jsonObj[0] == "Stream":
-							pass;
-						elif jsonObj[0] == "Props":
-							pass;
-		except:
-			eprint(traceback.format_exc());
+                            eprint("set connection info: client, server and browser token; secret, shared secret, enc key, mac key");
+                            eprint("logged in as " + jsonObj[1]["pushname"]  + " (" + jsonObj[1]["wid"] + ")");
+                        elif jsonObj[0] == "Stream":
+                            pass;
+                        elif jsonObj[0] == "Props":
+                            pass;
+        except:
+            eprint(traceback.format_exc());
 
 
 
-	def connect(self):
-		self.activeWs = websocket.WebSocketApp("wss://w1.web.whatsapp.com/ws",
-											   on_message = lambda ws, message: self.onMessage(ws, message),
-											   on_error = lambda ws, error: self.onError(ws, error),
-											   on_open = lambda ws: self.onOpen(ws),
-											   on_close = lambda ws: self.onClose(ws),
-											   header = { "Origin: https://web.whatsapp.com" });
+    def connect(self):
+        self.activeWs = websocket.WebSocketApp("wss://web.whatsapp.com/ws",
+                                               on_message = lambda ws, message: self.onMessage(ws, message),
+                                               on_error = lambda ws, error: self.onError(ws, error),
+                                               on_open = lambda ws: self.onOpen(ws),
+                                               on_close = lambda ws: self.onClose(ws),
+                                               header = { "Origin: https://web.whatsapp.com" });
 
-		self.websocketThread = Thread(target = self.activeWs.run_forever);
-		self.websocketThread.daemon = True;
-		self.websocketThread.start();
+        self.websocketThread = Thread(target = self.activeWs.run_forever);
+        self.websocketThread.daemon = True;
+        self.websocketThread.start();
 
-	def generateQRCode(self, callback=None):
-		self.loginInfo["clientId"] = base64.b64encode(os.urandom(16));
-		messageTag = str(getTimestamp());
-		self.messageQueue[messageTag] = { "desc": "_login", "callback": callback };
-		message = messageTag + ',["admin","init",[0,3,416],["Chromium at ' + datetime.datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]';
-		self.activeWs.send(message);
+    def generateQRCode(self, callback=None):
+        self.loginInfo["clientId"] = base64.b64encode(os.urandom(16));
+        messageTag = str(getTimestamp());
+        self.messageQueue[messageTag] = { "desc": "_login", "callback": callback };
+        message = messageTag + ',["admin","init",[0,3,2390],["WA Pilot at ' + datetime.datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]';
+        self.activeWs.send(message);
 
-	def restoreSession(self, callback=None):
-		messageTag = str(getTimestamp())
-		message = messageTag + ',["admin","init",[0,3,416],["Chromium at ' + datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]'
-		self.activeWs.send(message)
+    def restoreSession(self, callback=None):
+        messageTag = str(getTimestamp())
+        message = messageTag + ',["admin","init",[0,3,2390],["WA Pilot at ' + datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]'
+        self.activeWs.send(message)
 
-		messageTag = str(getTimestamp())
-		self.messageQueue[messageTag] = {"desc": "_restoresession"}
-		message = messageTag + ',["admin","login","' + self.connInfo["clientToken"] + '", "' + self.connInfo[
-		    "serverToken"] + '", "' + self.loginInfo["clientId"] + '", "takeover"]'
+        messageTag = str(getTimestamp())
+        self.messageQueue[messageTag] = {"desc": "_restoresession"}
+        message = messageTag + ',["admin","login","' + self.connInfo["clientToken"] + '", "' + self.connInfo[
+            "serverToken"] + '", "' + self.loginInfo["clientId"] + '", "takeover"]'
 
-		self.activeWs.send(message)
+        self.activeWs.send(message)
 
-	def getLoginInfo(self, callback):
-		callback["func"]({ "type": "login_info", "data": self.loginInfo }, callback);
+    def getLoginInfo(self, callback):
+        callback["func"]({ "type": "login_info", "data": self.loginInfo }, callback);
 
-	def getConnectionInfo(self, callback):
-		callback["func"]({ "type": "connection_info", "data": self.connInfo }, callback);
+    def getConnectionInfo(self, callback):
+        callback["func"]({ "type": "connection_info", "data": self.connInfo }, callback);
 
-	def sendTextMessage(self, number, text):
-		messageId = "3EB0"+binascii.hexlify(Random.get_random_bytes(8)).upper()
-		messageTag = str(getTimestamp())
-		messageParams = {"key": {"fromMe": True, "remoteJid": number + "@s.whatsapp.net", "id": messageId},"messageTimestamp": getTimestamp(), "status": 1, "message": {"conversation": text}}
-		msgData = ["action", {"type": "relay", "epoch": str(self.messageSentCount)},[["message", None, WAWebMessageInfo.encode(messageParams)]]]
-		encryptedMessage = WhatsAppEncrypt(self.loginInfo["key"]["encKey"], self.loginInfo["key"]["macKey"],whatsappWriteBinary(msgData))
-		payload = bytearray(messageId) + bytearray(",") + bytearray(to_bytes(WAMetrics.MESSAGE, 1)) + bytearray([0x80]) + encryptedMessage
-		self.messageSentCount = self.messageSentCount + 1
-		self.messageQueue[messageId] = {"desc": "__sending"}
-		self.activeWs.send(payload, websocket.ABNF.OPCODE_BINARY)
+    def sendTextMessage(self, number, text):
+        messageId = "3EB0"+binascii.hexlify(Random.get_random_bytes(8)).upper()
+        messageTag = str(getTimestamp())
+        messageParams = {"key": {"fromMe": True, "remoteJid": number + "@s.whatsapp.net", "id": messageId},"messageTimestamp": getTimestamp(), "status": 1, "message": {"conversation": text}}
+        msgData = ["action", {"type": "relay", "epoch": str(self.messageSentCount)},[["message", None, WAWebMessageInfo.encode(messageParams)]]]
+        encryptedMessage = WhatsAppEncrypt(self.loginInfo["key"]["encKey"], self.loginInfo["key"]["macKey"],whatsappWriteBinary(msgData))
+        payload = bytearray(messageId) + bytearray(",") + bytearray(to_bytes(WAMetrics.MESSAGE, 1)) + bytearray([0x80]) + encryptedMessage
+        self.messageSentCount = self.messageSentCount + 1
+        self.messageQueue[messageId] = {"desc": "__sending"}
+        self.activeWs.send(payload, websocket.ABNF.OPCODE_BINARY)
 
-	def decryptImage(self, url, mediaKey):
-		try:
-			response = urllib2.urlopen(url)
-			encimg = response.read()
-			cryptKeys = "576861747341707020496d616765204b657973"
-			refkey = base64.b64decode(mediaKey)
-			derivative = HKDFv3().deriveSecrets(refkey, binascii.unhexlify(cryptKeys), 112)
-			parts = ByteUtil.split(derivative, 16, 32)
-			iv = parts[0]
-			cipherKey = parts[1]
-			e_img = encimg[:-10]
-			AES.key_size = 128
-			cr_obj = AES.new(key=cipherKey, mode=AES.MODE_CBC, IV=iv)
-			return cr_obj.decrypt(e_img)
-		except urllib2.HTTPError as err:
-			return False
+    def status(self, callback=None):
+        if self.activeWs is not None:
+            messageTag = str(getTimestamp())
+            self.messageQueue[messageTag] = {"desc": "_status", "callback": callback}
+            message = messageTag + ',["admin", "test"]'
+            self.activeWs.send(message)
 
-	def saveImage(self, message):
-		mediaKey = message['message']['imageMessage']['mediaKey']
-		url = message['message']['imageMessage']['url']
-		messageId = message['key']['id']
-		decryptedImage = self.decryptImage(url, mediaKey)
-		if decryptedImage:
-			with open("images/" + messageId + ".jpg", "wb") as f:
-				f.write(bytearray(decryptedImage))
-				f.close()
-
-	def status(self, callback=None):
-		if self.activeWs is not None:
-			messageTag = str(getTimestamp())
-			self.messageQueue[messageTag] = {"desc": "_status", "callback": callback}
-			message = messageTag + ',["admin", "test"]'
-			self.activeWs.send(message)
-
-	def disconnect(self):
-		self.activeWs.send('goodbye,,["admin","Conn","disconnect"]');		# WhatsApp server closes connection automatically when client wants to disconnect
-		#time.sleep(0.5);
-		#self.activeWs.close();
+    def disconnect(self):
+        self.activeWs.send('goodbye,,["admin","Conn","disconnect"]');		# WhatsApp server closes connection automatically when client wants to disconnect
+        #time.sleep(0.5);
+        #self.activeWs.close();
