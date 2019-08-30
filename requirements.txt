@@ -4,4 +4,3 @@ curve25519-donna
 pycrypto
 pyqrcode
 protobuf
-python-axolotl
